@@ -6,47 +6,55 @@ const secp256k1 = require('secp256k1');
 const crypto = require('crypto');
 const bitcoinjs = require('bitcoinjs-lib');
 
+messages = require("./messages");
 
 class Cratos {
     constructor(url, chainId) {
-        if (!this.url) {
+        if (!url) {
             throw new Error("url object was not set or invalid");
         }
-        if (!this.chainId) {
+        if (!chainId) {
             throw new Error("chainId object was not set or invalid");
         }
         this.url = url;
         this.chainId = chainId;
         this.path = "m/44'/118'/0'/0/0";
-        this.bech32MainPrefix = "cosmos";
+        this.bech32MainPrefix = "cratos";
     }
 
+    neweMnemonic() {
+        return bip39.generateMnemonic();
+        
+    }
+    
     getAccounts(address) {
         let accountsApi = "/auth/accounts/";
         return fetch(this.url + accountsApi + address)
             .then(response => response.json());
     }
 
-    getAddress(mnemonic) {
+    getFullPrivInfo(mnemonic) {
         if (typeof mnemonic !== "string") {
             throw new Error("mnemonic expects a string");
         }
-        const seed = bip39.mnemonicToSeed(mnemonic);
-        const node = bip32.fromSeed(seed);
-        const child = node.derivePath(this.path);
-        const words = bech32.toWords(child.identifier);
-        return bech32.encode(this.bech32MainPrefix, words);
+
+        return bip39.mnemonicToSeed(mnemonic).then(
+            seed => {
+                // Get address
+                const node = bip32.fromSeed(seed);
+                const child = node.derivePath(this.path);
+                const words = bech32.toWords(child.identifier);
+                const ecpair = bitcoinjs.ECPair.fromPrivateKey(child.privateKey, { compressed: false });
+
+                return {
+                    "address": bech32.encode(this.bech32MainPrefix, words),
+                    "getECPairPriv": ecpair.privateKey
+                }
+            });
     }
 
-    getECPairPriv(mnemonic) {
-        if (typeof mnemonic !== "string") {
-            throw new Error("mnemonic expects a string");
-        }
-        const seed = bip39.mnemonicToSeed(mnemonic);
-        const node = bip32.fromSeed(seed);
-        const child = node.derivePath(this.path);
-        const ecpair = bitcoinjs.ECPair.fromPrivateKey(child.privateKey, { compressed: false });
-        return ecpair.privateKey;
+    newMsg () {
+        return messages.New
     }
 
     broadcast(signedTx) {
