@@ -1,6 +1,6 @@
 {
   "name": "@cratosnetwork/cratosjs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Javascript library to connect with Cratos Network",
   "main": "src/index.js",
   "scripts": {
